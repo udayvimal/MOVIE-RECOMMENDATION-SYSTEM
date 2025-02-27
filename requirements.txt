@@ -72,3 +72,8 @@ tzdata==2024.1
 urllib3==2.2.1
 watchdog==4.0.0
 wcwidth==0.2.13
+streamlit
+scikit-learn  # If your model uses sklearn
+pandas
+numpy
+joblib 
