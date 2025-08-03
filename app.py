@@ -2,6 +2,8 @@ import streamlit as st
 import pickle
 import pandas as pd
 import requests
+import gzip
+import os
 
 # Function to fetch movie poster from OMDb API
 def fetch_poster(movie_title):
@@ -32,13 +34,6 @@ def recommend(movie, movies, similarity):
     
     return recommended_movies, recommended_posters
 
-# Load movie dataset
-import pickle
-import pandas as pd
-import gzip
-import requests
-import os
-
 # Google Drive download function
 def download_file_from_google_drive(url, dest_path):
     if not os.path.exists(dest_path):
@@ -46,15 +41,15 @@ def download_file_from_google_drive(url, dest_path):
         with open(dest_path, 'wb') as f:
             f.write(response.content)
 
-# Direct download URLs
+# Direct download URLs for your compressed pickle files
 MOVIES_URL = "https://drive.google.com/uc?export=download&id=1xqEaKwnVU5kNA-Idq4obSjts5ZGG_EB_"
 SIMILARITY_URL = "https://drive.google.com/uc?export=download&id=1LGuTPZUJb20s3MFiuYuEi7hT79dTla-a"
 
-# Download only if not already present
+# Download compressed files if not already present
 download_file_from_google_drive(MOVIES_URL, "movies.pkl.gz")
 download_file_from_google_drive(SIMILARITY_URL, "similarity.pkl.gz")
 
-# Load files
+# Load the compressed pickle files
 with gzip.open("movies.pkl.gz", "rb") as f:
     movies_dict = pickle.load(f)
 
@@ -75,11 +70,9 @@ if st.button('Recommend'):
     recommendations, posters = recommend(selected_movie_name, movies, similarity)
 
     if recommendations:
-        # Display movies with posters in a row
         cols = st.columns(5)  # 5 columns for 5 movies
         for i in range(5):
             with cols[i]:
                 st.image(posters[i], caption=recommendations[i], use_container_width=True)
     else:
         st.error("No recommendations found! Please select a valid movie.")
-
