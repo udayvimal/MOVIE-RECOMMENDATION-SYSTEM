@@ -33,11 +33,35 @@ def recommend(movie, movies, similarity):
     return recommended_movies, recommended_posters
 
 # Load movie dataset
-movies_dict = pickle.load(open('C:/Users/2k22c/myenv/venv/movie/movies.pkl', 'rb'))
-movies = pd.DataFrame(movies_dict)
+import pickle
+import pandas as pd
+import gzip
+import requests
+import os
 
-# Load similarity matrix
-similarity = pickle.load(open('C:/Users/2k22c/myenv/venv/movie/similarity.pkl', 'rb'))
+# Google Drive download function
+def download_file_from_google_drive(url, dest_path):
+    if not os.path.exists(dest_path):
+        response = requests.get(url)
+        with open(dest_path, 'wb') as f:
+            f.write(response.content)
+
+# Direct download URLs
+MOVIES_URL = "https://drive.google.com/uc?export=download&id=1xqEaKwnVU5kNA-Idq4obSjts5ZGG_EB_"
+SIMILARITY_URL = "https://drive.google.com/uc?export=download&id=1LGuTPZUJb20s3MFiuYuEi7hT79dTla-a"
+
+# Download only if not already present
+download_file_from_google_drive(MOVIES_URL, "movies.pkl.gz")
+download_file_from_google_drive(SIMILARITY_URL, "similarity.pkl.gz")
+
+# Load files
+with gzip.open("movies.pkl.gz", "rb") as f:
+    movies_dict = pickle.load(f)
+
+with gzip.open("similarity.pkl.gz", "rb") as f:
+    similarity = pickle.load(f)
+
+movies = pd.DataFrame(movies_dict)
 
 # Streamlit UI
 st.title('🎬 Movie Recommender System')
@@ -58,3 +82,4 @@ if st.button('Recommend'):
                 st.image(posters[i], caption=recommendations[i], use_container_width=True)
     else:
         st.error("No recommendations found! Please select a valid movie.")
+
