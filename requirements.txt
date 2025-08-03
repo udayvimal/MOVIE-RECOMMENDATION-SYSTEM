@@ -77,3 +77,9 @@ scikit-learn  # If your model uses sklearn
 pandas
 numpy
 joblib 
+streamlit
+pandas
+requests
+pickle
+gzip
+
