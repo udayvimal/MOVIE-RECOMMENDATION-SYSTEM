@@ -3,31 +3,31 @@ import pickle
 import pandas as pd
 import requests
 
-# Simple cache to store poster URLs in-memory during runtime
 poster_cache = {}
 
-# Function to fetch movie poster from OMDb API with timeout and caching
 def fetch_poster(movie_title):
     if movie_title in poster_cache:
         return poster_cache[movie_title]
     
-    api_key = "63dfac01"  # Your OMDb API Key
+    api_key = "63dfac01"
     url = f"http://www.omdbapi.com/?t={movie_title}&apikey={api_key}"
     try:
-        response = requests.get(url, timeout=3)  # 3 seconds timeout
+        response = requests.get(url, timeout=3)
         data = response.json()
-        poster_url = data.get("Poster", "https://via.placeholder.com/200")  # Default placeholder
-    except requests.exceptions.RequestException:
+        poster_url = data.get("Poster", "https://via.placeholder.com/200")
+        st.write(f"Fetched poster for {movie_title}")
+    except Exception as e:
+        st.write(f"Error fetching poster for {movie_title}: {e}")
         poster_url = "https://via.placeholder.com/200"
     
     poster_cache[movie_title] = poster_url
     return poster_url
 
-# Function to recommend movies
 def recommend(movie, movies, similarity):
     try:
         movie_index = movies[movies['title'] == movie].index[0]
     except IndexError:
+        st.error("Selected movie not found in database.")
         return [], []
 
     distances = similarity[movie_index]
@@ -39,11 +39,11 @@ def recommend(movie, movies, similarity):
     for i in movie_list:
         movie_title = movies.iloc[i[0]].title
         recommended_movies.append(movie_title)
-        recommended_posters.append(fetch_poster(movie_title))
+        poster = fetch_poster(movie_title)
+        recommended_posters.append(poster)
 
     return recommended_movies, recommended_posters
 
-# Load data files
 with open("movies.pkl", "rb") as f:
     movies_dict = pickle.load(f)
 
@@ -52,18 +52,14 @@ with open("similarity.pkl", "rb") as f:
 
 movies = pd.DataFrame(movies_dict)
 
-# Streamlit UI
 st.title("🎬 Movie Recommender System")
 
-selected_movie_name = st.selectbox(
-    "🔍 Select a movie:",
-    movies["title"].values
-)
+selected_movie_name = st.selectbox("🔍 Select a movie:", movies["title"].values)
 
 if st.button("Recommend"):
     with st.spinner("Fetching recommendations..."):
         recommendations, posters = recommend(selected_movie_name, movies, similarity)
-
+    
     if recommendations:
         cols = st.columns(5)
         for i in range(5):
