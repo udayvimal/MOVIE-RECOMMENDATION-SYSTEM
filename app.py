@@ -33,22 +33,46 @@ def recommend(movie, movies, similarity):
 
     return recommended_movies, recommended_posters
 
-# Function to download files from Google Drive if not already present
-def download_file_from_google_drive(url, dest_path):
-    if not os.path.exists(dest_path):
-        response = requests.get(url)
-        with open(dest_path, 'wb') as f:
-            f.write(response.content)
+# Google Drive download functions for large files with confirmation token handling
+def download_file_from_google_drive(file_id, destination):
+    if os.path.exists(destination):
+        return  # Already downloaded
 
-# URLs for your compressed pickle files on Google Drive
-MOVIES_URL = "https://drive.google.com/uc?export=download&id=1xqEaKwnVU5kNA-Idq4obSjts5ZGG_EB_"
-SIMILARITY_URL = "https://drive.google.com/uc?export=download&id=1LGuTPZUJb20s3MFiuYuEi7hT79dTla-a"
+    URL = "https://docs.google.com/uc?export=download"
+    session = requests.Session()
 
-# Download the files if they don't exist locally
-download_file_from_google_drive(MOVIES_URL, "movies.pkl.gz")
-download_file_from_google_drive(SIMILARITY_URL, "similarity.pkl.gz")
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    token = get_confirm_token(response)
 
-# Load data from the compressed pickle files
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+
+    save_response_content(response, destination)
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+    return None
+
+def save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:
+                f.write(chunk)
+
+# Google Drive file IDs (from your provided links)
+MOVIES_FILE_ID = "1xqEaKwnVU5kNA-Idq4obSjts5ZGG_EB_"
+SIMILARITY_FILE_ID = "1LGuTPZUJb20s3MFiuYuEi7hT79dTla-a"
+
+# Download files if not present
+download_file_from_google_drive(MOVIES_FILE_ID, "movies.pkl.gz")
+download_file_from_google_drive(SIMILARITY_FILE_ID, "similarity.pkl.gz")
+
+# Load compressed pickle files
 with gzip.open("movies.pkl.gz", "rb") as f:
     movies_dict = pickle.load(f)
 
@@ -57,7 +81,7 @@ with gzip.open("similarity.pkl.gz", "rb") as f:
 
 movies = pd.DataFrame(movies_dict)
 
-# Streamlit app UI
+# Streamlit UI
 st.title('🎬 Movie Recommender System')
 
 selected_movie_name = st.selectbox(
