@@ -33,10 +33,10 @@ def recommend(movie, movies, similarity):
     return recommended_movies, recommended_posters
 
 # Load compressed data from local GitHub repo (via Git LFS)
-with gzip.open("movies.pkl.gz", "rb") as f:
+with open("movies.pkl", "rb") as f:
     movies_dict = pickle.load(f)
 
-with gzip.open("similarity.pkl.gz", "rb") as f:
+with open("similarity.pkl", "rb") as f:
     similarity = pickle.load(f)
 
 movies = pd.DataFrame(movies_dict)
@@ -59,3 +59,4 @@ if st.button("Recommend"):
                 st.image(posters[i], caption=recommendations[i], use_container_width=True)
     else:
         st.error("No recommendations found! Please select a valid movie.")
+
