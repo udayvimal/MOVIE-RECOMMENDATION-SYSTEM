@@ -13,43 +13,42 @@ def fetch_poster(movie_title):
     data = response.json()
     return data.get("Poster", "https://via.placeholder.com/200")  # Default image if not found
 
-# Function to recommend movies
+# Function to recommend movies based on similarity matrix
 def recommend(movie, movies, similarity):
-    """Recommend movies and fetch posters."""
     try:
         movie_index = movies[movies['title'] == movie].index[0]
     except IndexError:
-        return [], []  # Return empty lists if movie is not found
+        return [], []  # If movie not found, return empty lists
 
     distances = similarity[movie_index]
     movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
 
     recommended_movies = []
     recommended_posters = []
-    
+
     for i in movies_list:
         movie_title = movies.iloc[i[0]]['title']
         recommended_movies.append(movie_title)
-        recommended_posters.append(fetch_poster(movie_title))  # Fetch poster
-    
+        recommended_posters.append(fetch_poster(movie_title))
+
     return recommended_movies, recommended_posters
 
-# Google Drive download function
+# Function to download files from Google Drive if not already present
 def download_file_from_google_drive(url, dest_path):
     if not os.path.exists(dest_path):
         response = requests.get(url)
         with open(dest_path, 'wb') as f:
             f.write(response.content)
 
-# Direct download URLs for your compressed pickle files
+# URLs for your compressed pickle files on Google Drive
 MOVIES_URL = "https://drive.google.com/uc?export=download&id=1xqEaKwnVU5kNA-Idq4obSjts5ZGG_EB_"
 SIMILARITY_URL = "https://drive.google.com/uc?export=download&id=1LGuTPZUJb20s3MFiuYuEi7hT79dTla-a"
 
-# Download compressed files if not already present
+# Download the files if they don't exist locally
 download_file_from_google_drive(MOVIES_URL, "movies.pkl.gz")
 download_file_from_google_drive(SIMILARITY_URL, "similarity.pkl.gz")
 
-# Load the compressed pickle files
+# Load data from the compressed pickle files
 with gzip.open("movies.pkl.gz", "rb") as f:
     movies_dict = pickle.load(f)
 
@@ -58,7 +57,7 @@ with gzip.open("similarity.pkl.gz", "rb") as f:
 
 movies = pd.DataFrame(movies_dict)
 
-# Streamlit UI
+# Streamlit app UI
 st.title('🎬 Movie Recommender System')
 
 selected_movie_name = st.selectbox(
@@ -70,7 +69,7 @@ if st.button('Recommend'):
     recommendations, posters = recommend(selected_movie_name, movies, similarity)
 
     if recommendations:
-        cols = st.columns(5)  # 5 columns for 5 movies
+        cols = st.columns(5)
         for i in range(5):
             with cols[i]:
                 st.image(posters[i], caption=recommendations[i], use_container_width=True)
