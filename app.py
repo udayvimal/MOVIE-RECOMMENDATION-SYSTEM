@@ -4,120 +4,126 @@ import pandas as pd
 import requests
 import os
 
-# --------- Custom CSS ---------
+# ---------- Custom Dark Theme CSS ----------
 st.markdown("""
 <style>
-/* Background Gradient */
+/* Dark background gradient */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #eee;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Sidebar Styling */
+/* Sidebar dark style */
 [data-testid="stSidebar"] {
-    background: #2c1a60;
-    color: #ddd;
+    background: #121212;
+    color: #bbb;
     font-weight: 500;
 }
 
-/* Title Gradient */
+/* Title gradient text */
 h1 {
-    background: -webkit-linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(45deg, #ff6a00, #ee0979);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-/* Buttons */
-.stButton>button {
-    background: linear-gradient(45deg, #f093fb, #f5576c);
-    color: white;
-    font-weight: 600;
-    border-radius: 8px;
-    height: 45px;
-    width: 150px;
-    transition: background 0.3s ease;
-}
-
-.stButton>button:hover {
-    background: linear-gradient(45deg, #f5576c, #f093fb);
-}
-
-/* Columns card style */
-.movie-card {
-    background: rgba(255, 255, 255, 0.15);
+/* Button style */
+.stButton > button {
+    background: linear-gradient(45deg, #ff6a00, #ee0979);
+    color: #fff;
+    font-weight: 700;
     border-radius: 12px;
-    box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );
-    padding: 10px;
+    height: 45px;
+    width: 170px;
+    transition: background 0.3s ease;
+    box-shadow: 0 0 10px #ff6a00aa;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(45deg, #ee0979, #ff6a00);
+    box-shadow: 0 0 20px #ee0979cc;
+}
+
+/* Movie card style */
+.movie-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(255, 106, 0, 0.4);
+    padding: 12px;
     text-align: center;
-    margin-bottom: 15px;
-    transition: transform 0.3s ease;
+    margin-bottom: 20px;
+    transition: transform 0.25s ease;
 }
 .movie-card:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
-/* Poster image rounded corners */
+/* Poster styling */
 img {
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(255, 106, 0, 0.7);
     transition: transform 0.3s ease;
+    cursor: pointer;
 }
 img:hover {
-    transform: scale(1.1);
+    transform: scale(1.12);
 }
 
 /* Footer */
 footer {
-    text-align:center;
-    color: #ddd;
+    text-align: center;
+    color: #888;
     font-size: 13px;
-    margin-top: 40px;
+    margin-top: 50px;
+}
+
+/* Tooltip for selectbox */
+[data-testid="stSelectbox"] > div > div {
+    color: #ddd;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- Page config ----------
+# --------- Page setup ----------
 st.set_page_config(
-    page_title="🎬 Movie Recommender",
-    page_icon="🎥",
+    page_title="🎬 Movie Recommender - Dark Mode",
+    page_icon="🎞️",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
 # ---------- Sidebar ----------
 with st.sidebar:
-    st.markdown("## 🎞️ About This App")
+    st.header("🎥 About Movie Recommender")
     st.markdown("""
-    Welcome to the **Movie Recommender System!**
+    Welcome to the **dark mode** Movie Recommender System!  
+    Select your favorite movie and get 5 similar picks with stunning posters.  
 
-    🔍 Select a movie from the dropdown  
-    🎯 Get 5 personalized movie recommendations  
-    🎨 Beautiful posters fetched live from OMDb API  
+    Powered by Streamlit and OMDb API.
     """)
     st.markdown("---")
-    st.markdown("### 👨‍💻 Developer")
-    st.markdown("[Uday Vimal](https://github.com/udayvimal)  \nData Science & ML Enthusiast")
+    st.markdown("👨‍💻 Developed by [Uday Vimal](https://github.com/udayvimal)")
     st.markdown("---")
     with st.expander("📁 Show project files"):
-        st.write(os.listdir())
+        st.write(os.listdir("."))
 
-# --------- Load data ---------
+# -------- Load data --------
 @st.cache_data(show_spinner=False)
-def load_pickle_file(file_path):
-    with open(file_path, "rb") as f:
+def load_pickle_file(path):
+    with open(path, "rb") as f:
         return pickle.load(f)
 
 try:
     movies_dict = load_pickle_file("movies.pkl")
     similarity = load_pickle_file("similarity.pkl")
 except Exception as e:
-    st.error(f"Failed to load data files: {e}")
+    st.error(f"Failed to load data: {e}")
     st.stop()
 
 movies = pd.DataFrame(movies_dict)
 
-# --------- Functions ---------
+# -------- Functions ---------
 poster_cache = {}
 
 def fetch_poster(movie_title):
@@ -138,62 +144,63 @@ def fetch_poster(movie_title):
 
 def recommend(movie, movies, similarity):
     try:
-        movie_index = movies[movies['title'] == movie].index[0]
+        idx = movies[movies['title'] == movie].index[0]
     except IndexError:
         st.warning("⚠️ Movie not found in dataset.")
         return [], []
 
-    distances = similarity[movie_index]
+    distances = similarity[idx]
     movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
 
-    recommended_movies = []
-    recommended_posters = []
+    rec_titles = []
+    rec_posters = []
 
     for i in movie_list:
         title = movies.iloc[i[0]].title
-        recommended_movies.append(title)
-        recommended_posters.append(fetch_poster(title))
+        rec_titles.append(title)
+        rec_posters.append(fetch_poster(title))
 
-    return recommended_movies, recommended_posters
+    return rec_titles, rec_posters
 
-# --------- UI ---------
+# ---------- Main UI ----------
 st.markdown("<h1>🎬 Movie Recommender System</h1>", unsafe_allow_html=True)
-st.markdown("<p style='font-size:18px; color:#eee;'>Select a movie below and get 5 similar recommendations with stunning posters.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color:#ddd; font-size:18px;'>Choose a movie below to get top 5 recommendations.</p>", unsafe_allow_html=True)
 
-selected_movie = st.selectbox("🔍 Select a movie:", options=movies["title"].values, help="Start typing to search your favorite movie.")
+selected_movie = st.selectbox(
+    "🔍 Select a movie:",
+    options=movies["title"].values,
+    help="Type to search your favorite movie",
+)
 
 st.write("")  # spacing
 
-recommend_btn = st.button("Recommend 🎯")
-
-if recommend_btn:
-    with st.spinner("Finding best matches..."):
+if st.button("Recommend 🎯"):
+    with st.spinner("Finding your movie matches..."):
         recs, posters = recommend(selected_movie, movies, similarity)
 
     if recs:
         st.markdown("---")
-        st.subheader("🎥 Your Movie Recommendations")
+        st.subheader("🎥 Recommended for you:")
         cols = st.columns(5)
-        for idx, col in enumerate(cols):
+        for i, col in enumerate(cols):
             with col:
-                # Use markdown with CSS class for nice card effect
                 st.markdown(
                     f"""
                     <div class="movie-card">
-                        <img src="{posters[idx]}" alt="{recs[idx]}" style="width:100%; height:auto;"/>
-                        <h4 style="margin-top:8px; color:#fff;">{recs[idx]}</h4>
+                        <img src="{posters[i]}" alt="{recs[i]}" style="width:100%; height:auto;" />
+                        <h4 style="color:#ff6a00; margin-top:10px;">{recs[i]}</h4>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
     else:
-        st.warning("No recommendations found. Please try another movie.")
+        st.warning("No recommendations found. Try a different movie.")
 
-# Footer
+# ---------- Footer ----------
 st.markdown(
     """
     <footer>
-    Developed by <a href="https://github.com/udayvimal" target="_blank" style="color:#f093fb;">Uday Vimal</a> &bull; Powered by Streamlit
+    Developed by <a href="https://github.com/udayvimal" target="_blank" style="color:#ff6a00;">Uday Vimal</a> &bull; Powered by Streamlit
     </footer>
     """,
     unsafe_allow_html=True,
